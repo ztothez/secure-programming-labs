@@ -112,7 +112,9 @@ void T5_printf_vulnerability(void) {
         return;
     }
 
-    printf(input);  // VULNERABLE: user controls the format string
+    // Fixed: avoid externally-controlled format string (CWE-134)
+    // Original vulnerable code: printf(input);
+    printf("%s", input);
 }
 
 /* ---------------- Main menu ---------------- */
