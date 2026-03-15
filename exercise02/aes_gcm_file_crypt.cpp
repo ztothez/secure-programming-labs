@@ -4,26 +4,43 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-
+#include <cctype>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 
-static FILE* safe_fopen(const std::string& path, const char* mode) {
-    std::string safe_path = path;
+static std::string sanitize_filename(const std::string& path) {
+    std::string name = path;
 
-    std::size_t pos = safe_path.find_last_of('/');
+    std::size_t pos = name.find_last_of("/\\");
     if (pos != std::string::npos) {
-        safe_path = safe_path.substr(pos + 1);
+        name = name.substr(pos + 1);
     }
 
-    if (safe_path.empty() ||
-        safe_path.find("..") != std::string::npos ||
-        safe_path.find('\\') != std::string::npos) {
-        return nullptr;
+    if (name.empty() || name == "." || name == "..") {
+        throw std::runtime_error("Invalid file path");
     }
 
-    const char* filename = safe_path.c_str();
-    return std::fopen(filename, mode);
+    std::string cleaned;
+    cleaned.reserve(name.size());
+
+    for (unsigned char c : name) {
+        if (std::isalnum(c) || c == '.' || c == '_' || c == '-') {
+            cleaned.push_back((char)c);
+        } else {
+            throw std::runtime_error("Invalid file path");
+        }
+    }
+
+    if (cleaned.empty()) {
+        throw std::runtime_error("Invalid file path");
+    }
+
+    return cleaned;
+}
+
+static FILE* safe_fopen(const std::string& path, const char* mode) {
+    std::string filename = sanitize_filename(path);
+    return std::fopen(filename.c_str(), mode);
 }
 
 static const uint8_t MAGIC[8] = {'C','R','Y','P','T','0','1','\0'};
@@ -85,19 +102,11 @@ static void write_all(const std::string& path, const std::vector<uint8_t>& data)
     FILE* f = safe_fopen(path, "wb");
     if (!f) die("Cannot open output file");
 
-    size_t off = 0;
-    while (off < data.size()) {
-        if (off > data.size())
-            die("write offset overflow");
-        
-        const size_t remaining = data.size() - off;
-        const uint8_t* chunk = data.data() + off;
-        size_t n = std::fwrite(chunk, 1, remaining, f);
-        if (n == 0) {
+    for (uint8_t byte : data) {
+        if (std::fputc(byte, f) == EOF) {
             std::fclose(f);
             die("write failed");
         }
-        off += n;
     }
 
     std::fclose(f);
