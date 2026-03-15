@@ -2,9 +2,10 @@
 import os
 
 def safe_path(path):
-    if ".." in path or "/" in path or "\\" in path:
+    name = os.path.basename(path)
+    if name != path or ".." in name or not name:
         raise ValueError("invalid path")
-    return path
+    return name
 
 def mix_files(file1, file2, outfile):
     file1 = safe_path(file1)
@@ -16,11 +17,9 @@ def mix_files(file1, file2, outfile):
         raise FileNotFoundError("Missing input file: %s" % file1)
     if not os.path.exists(file2):
         raise FileNotFoundError("Missing input file: %s" % file2)
-
     # Error 2: prevent overwriting inputs by accident
     if os.path.abspath(outfile) in {os.path.abspath(file1), os.path.abspath(file2)}:
         raise ValueError("Output must be different from input files.")
-
     # Error 3: output exists (use 'x' to fail safely)
     with open(file1, "r", encoding="utf-8") as a, \
          open(file2, "r", encoding="utf-8") as b, \
