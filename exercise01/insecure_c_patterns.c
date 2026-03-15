@@ -24,7 +24,14 @@ void T1_unlimited_buffer_overflow(void) {
 
     printf("\n[T1] Unlimited buffer overflow\n");
     printf("Enter input: ");
-    gets(buffer);  // UNSAFE: no bounds checking, deprecated
+    // Earlier vulnerable part: gets(buffer);
+    // VULNERABLE: no bounds checking, deprecated, may cause buffer overflow
+    // Fixed due to Snyk analysis
+    if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+        printf("Input error\n");
+        return;
+    }
+    buffer[strcspn(buffer, "\n")] = '\0';
     printf("You entered: %s\n", buffer);
 }
 
