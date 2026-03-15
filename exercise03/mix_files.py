@@ -13,9 +13,9 @@ def mix_files(file1, file2, outfile):
     raise ValueError("Output must be different from input files.")
 
   # Error 3: output exists (use 'x' to fail safely)
-  with open(file1, "r", encoding="utf-8") as a, \
-       open(file2, "r", encoding="utf-8") as b, \
-       open(outfile, "x", encoding="utf-8") as out:
+  with open(safe_path(file1), "r", encoding="utf-8") as a, \
+       open(safe_path(file2), "r", encoding="utf-8") as b, \
+       open(safe_path(outfile), "x", encoding="utf-8") as out:
 
     while True:
       la = a.readline()
