@@ -9,18 +9,21 @@
 #include <openssl/rand.h>
 
 static FILE* safe_fopen(const std::string& path, const char* mode) {
-    const char* safe_path = path.c_str();
+    std::string safe_path = path;
 
-    const char* slash = std::strrchr(safe_path, '/');
-    if (slash != nullptr) {
-        safe_path = slash + 1;
+    std::size_t pos = safe_path.find_last_of('/');
+    if (pos != std::string::npos) {
+        safe_path = safe_path.substr(pos + 1);
     }
 
-    if (std::strstr(safe_path, "..") != nullptr || std::strchr(safe_path, '\\') != nullptr) {
+    if (safe_path.empty() ||
+        safe_path.find("..") != std::string::npos ||
+        safe_path.find('\\') != std::string::npos) {
         return nullptr;
     }
 
-    return std::fopen(safe_path, mode);
+    const char* filename = safe_path.c_str();
+    return std::fopen(filename, mode);
 }
 
 static const uint8_t MAGIC[8] = {'C','R','Y','P','T','0','1','\0'};
@@ -87,7 +90,9 @@ static void write_all(const std::string& path, const std::vector<uint8_t>& data)
         if (off > data.size())
             die("write offset overflow");
         
-        size_t n = std::fwrite(data.data() + off, 1, data.size() - off, f);
+        const size_t remaining = data.size() - off;
+        const uint8_t* chunk = data.data() + off;
+        size_t n = std::fwrite(chunk, 1, remaining, f);
         if (n == 0) {
             std::fclose(f);
             die("write failed");
@@ -143,7 +148,8 @@ static std::vector<uint8_t> encrypt_aes_gcm(
     if ((size_t)outlen >= ciphertext.size())
         die("output length overflow");
     
-    if (EVP_EncryptFinal_ex(ctx.p, ciphertext.data() + outlen, &tmplen) != 1)
+    uint8_t* outptr = ciphertext.data() + outlen;
+    if (EVP_EncryptFinal_ex(ctx.p, outptr, &tmplen) != 1)
         die("EncryptFinal failed");
 
     outlen += tmplen;
@@ -189,7 +195,8 @@ static std::vector<uint8_t> decrypt_aes_gcm(
     if ((size_t)outlen >= plaintext.size())
     die("output length overflow");
 
-    int fin = EVP_DecryptFinal_ex(ctx.p, plaintext.data() + outlen, &tmplen);
+    uint8_t* outptr = plaintext.data() + outlen;
+    int fin = EVP_DecryptFinal_ex(ctx.p, outptr, &tmplen);
     if (fin != 1) {
         die("Authentication failed: wrong password or file tampered");
     }
@@ -207,10 +214,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    std::string mode = argv[1];
-    std::string infile = argv[2];
-    std::string outfile = argv[3];
-    std::string password = argv[4];
+    std::string mode(argv[1]);
+    std::string infile(argv[2]);
+    std::string outfile(argv[3]);
+    std::string password(argv[4]);
 
     try {
         if (mode == "enc") {
@@ -263,7 +270,7 @@ int main(int argc, char** argv) {
             if (tag_off > in.size())
                 die("tag offset overflow");
             
-            const uint8_t* tag = in.data() + tag_off;
+            const uint8_t* tag = &in[tag_off];
 
             uint8_t key[KEY_LEN];
             derive_key(password, salt, key);
