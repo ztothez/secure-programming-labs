@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <cerrno>
 #include <climits>
-
+#include <cctype>
 #if defined(_WIN32)
   #define NOMINMAX
   #include <windows.h>
@@ -17,6 +17,37 @@
   #include <fcntl.h>
   #include <sys/random.h>
 #endif
+
+static std::string sanitize_filename(const std::string& path) {
+    std::string name = path;
+
+    std::size_t pos = name.find_last_of("/\\");
+    if (pos != std::string::npos) {
+        name = name.substr(pos + 1);
+    }
+
+    if (name.empty() || name == "." || name == "..") {
+        throw std::runtime_error("Invalid output path");
+    }
+
+    std::string cleaned;
+    cleaned.reserve(name.size());
+
+    for (unsigned char c : name) {
+        if (std::isalnum(c) || c == '.' || c == '_' || c == '-') {
+            cleaned.push_back((char)c);
+        } else {
+            throw std::runtime_error("Invalid output path");
+        }
+    }
+
+    return cleaned;
+}
+
+static FILE* safe_fopen(const std::string& path, const char* mode) {
+    std::string filename = sanitize_filename(path);
+    return std::fopen(filename.c_str(), mode);
+}
 
 static void die(const char* msg) {
     std::perror(msg);
@@ -145,7 +176,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    FILE* out = std::fopen(outpath.c_str(), "wb");
+    // Earlier vulnerable part: FILE* out = std::fopen(outpath.c_str(), "wb");
+    // VULNERABLE: user-controlled path could allow path traversal
+    // Fixed due to Snyk analysis
+    FILE* out = safe_fopen(outpath, "wb");
     if (!out) die("fopen output file");
 
     try {
