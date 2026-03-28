@@ -1,27 +1,36 @@
-# COMP.SEC.300 – Secure Programming
+# Secure Programming Labs
+Multi-language implementations exploring secure programming practices, vulnerability patterns, and defensive techniques in low-level and system-level code.
 
-Coursework repository for COMP.SEC.300 (Secure Programming, 2025–2026).
+## Overview
+This project demonstrates how common programming mistakes introduce security vulnerabilities, and how these risks can be mitigated through secure coding practices.
 
-The exercises are implemented in C, C++, and Python and focus on secure coding practices, defensive input validation, cryptography, memory safety, and CI/CD security integration.
+The modules cover memory safety, input validation, cryptography, file handling, and system-level protections.
 
-Each exercise is organized into its own folder and is self-contained.
+## Modules
+- `insecure-patterns/` — Common unsafe C patterns and vulnerabilities  
+- `crypto-and-auth/` — AES encryption, PBKDF2 authentication, input filtering  
+- `file-processing/` — Controlled file handling and transformation  
+- `system-hardening/` — Core dump handling and system protections  
+- `safe-calculation/` — Defensive input handling and safe operations  
+- `ci-pipeline/` — Jenkins pipeline for automation  
 
----
+## Tech Stack
+- C / C++
+- Python
+- Cryptographic primitives (AES, PBKDF2)
+- Jenkins (CI/CD)
 
-## Structure
+## Usage
+Each module can be compiled or executed independently.
 
-- `exercise01/` – Insecure C patterns (intentional vulnerability examples)
-- `exercise02/` – Cryptography and secure random generation (C++ / Python)
-- `exercise03/` – Defensive file handling in Python
-- `exercise04/` – Process hardening (core dump disabling)
-- `exercise05/` – Safe CLI calculator with validated numeric parsing
-- `exercise06/` – CI/CD security pipeline (Jenkins + security tooling)
+```bash
+gcc -o program program.c
+./program
+```
+Refer to individual module READMEs for detailed usage.
 
----
+## Implementation Notes
+These implementations focus on illustrating secure programming concepts and defensive techniques rather than production-ready solutions.
 
-## Notes
-
-Some exercises intentionally contain insecure code for educational purposes.  
-These examples are used to demonstrate common vulnerability classes and are not meant as production-safe implementations.
-
-All programs were tested on a Linux environment.
+## Background
+Originally developed as part of a secure programming course, focused on understanding and mitigating common vulnerability patterns.
